@@ -1,2 +1,4 @@
 .*.sw*
 env/
+*.png
+.ipynb_checkpoints
