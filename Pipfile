@@ -8,6 +8,7 @@ verify_ssl = true
 [packages]
 jupyter = "*"
 beautifulsoup4 = "*"
+scrapy = "*"
 
 [requires]
 python_version = "3.7"

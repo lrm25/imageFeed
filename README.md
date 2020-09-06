@@ -30,6 +30,8 @@ or
 
 ## To run scrapy
 
+Enter the program subfolder and run:
+
 `scrapy crawl space-porn`
 
 or
