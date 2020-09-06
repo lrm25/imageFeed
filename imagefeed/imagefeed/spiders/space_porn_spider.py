@@ -1,3 +1,4 @@
+import os
 import platform
 import scrapy
 import subprocess
@@ -26,6 +27,10 @@ class SpacePornSpider(scrapy.Spider):
 
     def save_and_set_image(self, response):
         image_name = response.url.split('/')[-1]
+        if os.path.isfile(image_name):
+            print("File {} already downloaded".format(image_name))
+            return
+
         with open(image_name, 'wb') as f:
             f.write(response.body)
 
