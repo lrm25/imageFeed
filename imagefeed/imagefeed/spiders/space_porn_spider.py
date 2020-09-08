@@ -19,7 +19,9 @@ class SpacePornSpider(scrapy.Spider):
 
     def parse_error(self, failure):
         logging.error("Error retreiving URL {}: {}".format(
-            failure.request.url, failure.value.response.status))
+            failure.request.url, failure.value))
+        if failure.value.response is not None:
+            logging.error("Status code {} returned".format(failure.value.response.status))
 
     def parse(self, response):
         if response.url == self.space_porn_main_page:
