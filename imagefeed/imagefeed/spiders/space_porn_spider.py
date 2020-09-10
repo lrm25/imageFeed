@@ -12,10 +12,8 @@ class SpacePornSpider(scrapy.Spider):
     space_porn_main_page = "https://www.reddit.com/r/spaceporn"
 
     def start_requests(self):
-        urls = [self.space_porn_main_page]
-        for url in urls:
-            yield scrapy.Request(url, callback=self.parse, errback=self.parse_error,
-                                 dont_filter=True)
+        yield scrapy.Request(self.space_porn_main_page, callback=self.parse, errback=self.parse_error,
+                             dont_filter=True)
 
     def parse_error(self, failure):
         logging.error("Error retreiving URL {}: {}".format(

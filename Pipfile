@@ -9,6 +9,7 @@ verify_ssl = true
 jupyter = "*"
 beautifulsoup4 = "*"
 scrapy = "*"
+mock = "*"
 
 [requires]
 python_version = "3.7"
