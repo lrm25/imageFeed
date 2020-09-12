@@ -12,8 +12,8 @@ class SpacePornSpider(scrapy.Spider):
     space_porn_main_page = "https://www.reddit.com/r/spaceporn"
 
     def start_requests(self):
-        yield scrapy.Request(self.space_porn_main_page, callback=self.parse, errback=self.parse_error,
-                             dont_filter=True)
+        yield scrapy.Request(self.space_porn_main_page, callback=self.parse_main_page, 
+                             errback=self.parse_error, dont_filter=True)
 
     def parse_error(self, failure):
         logging.error("Error retreiving URL {}: {}".format(
@@ -21,11 +21,13 @@ class SpacePornSpider(scrapy.Spider):
         if failure.value.response is not None:
             logging.error("Status code {} returned".format(failure.value.response.status))
 
-    def parse(self, response):
-        if response.url == self.space_porn_main_page:
-            image_page_link = response.xpath('//*[a[@href]/div/div/img]/a/@href').get()
-            first_image_page_url = self.reddit_main_page + image_page_link
-            yield scrapy.Request(first_image_page_url, callback=self.parse_image_page)
+    def parse_main_page(self, response):
+        image_page_link = response.xpath('//*[a[@href]/div/div/img]/a/@href').get()
+        if image_page_link == None:
+            logging.error("Link to first image page not found in HTML")
+            return
+        first_image_page_url = self.reddit_main_page + image_page_link
+        yield scrapy.Request(first_image_page_url, callback=self.parse_image_page)
 
     def parse_image_page(self, response):
         image_marker = response.xpath('//*[a[img[contains(@alt,"spaceporn")]]]/a/@href').get()
