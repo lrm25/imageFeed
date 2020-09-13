@@ -1,0 +1,84 @@
+import scrapy
+import twisted
+import unittest
+import urllib
+
+from mock import patch
+from imagefeed.spiders.space_porn_spider import SpacePornSpider
+    
+class Response:
+    def __init__(self, status):
+        self.status = status
+
+class Value:
+    def __init__(self, response):
+        self.response = response
+
+class Request:
+    def __init__(self, url):
+        self.url = url
+
+class Failure:
+    def __init__(self, request, value):
+        self.request = request
+        self.value = value
+
+class TestSpacePorn(unittest.TestCase):
+
+    _main_page_data = '<div class="_3JgI-GOrkmyIeDeyzXdyUD _2CSlKHjH7lsjx0IpjORx14"><a href="/r/spaceporn/comments/iqrlsz/venusleft_titanmiddle_california_currentlyright/"><div class="_3Oa0THmZ3f5iZXAQ0hBJ0k " style="max-height:512px;margin:0 auto"><div><img alt="Post image" class="_2_tDEnGMLxpM6uOa2kaDB3 ImageBox-image media-element _1XWObl-3b9tPy64oaG6fax" src="https://preview.redd.it/i0t9cygn4jm51.jpg?width=640&amp;crop=smart&amp;auto=webp&amp;s=0517350ac5972b94d0e32ddf3b34a90093b7f523" style="max-height:512px"></div></div></a></div>'
+    _image_page_data = '<div class="_3Oa0THmZ3f5iZXAQ0hBJ0k " style="margin:0 auto"><a href="https://i.redd.it/5urgv13z7tm51.jpg" target="_blank"><img alt="r/spaceporn - Last nights efforts. Taken with my phone." class="_2_tDEnGMLxpM6uOa2kaDB3 ImageBox-image media-element _1XWObl-3b9tPy64oaG6fax" src="https://preview.redd.it/5urgv13z7tm51.jpg?width=960&amp;crop=smart&amp;auto=webp&amp;s=70676554dd926d866d5f0d7d02e4ac05db24a41a" style="max-height:700px"></a></div>'
+
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_parse_error_timeout(self, mock_logging):
+        failure = Failure(Request("dontcare"), Value(None))
+        sps = SpacePornSpider()
+        sps.parse_error(failure)
+        self.assertEqual(1, len(mock_logging.method_calls), "Only one error should be logged")
+    
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_parse_error_code(self, mock_logging):
+        error_code = 500
+        failure = Failure(Request("dontcare"), Value(Response(error_code)))
+        sps = SpacePornSpider()
+        sps.parse_error(failure)
+        self.assertEqual(2, len(mock_logging.method_calls), "Two errors should be logged")
+        self.assertIn(str(error_code), str(mock_logging.method_calls[1]))
+
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_parse_main_page_xpath_not_found(self, mock_logging):
+        response = scrapy.http.HtmlResponse(url="dontcare", body=str.encode("<body></body>",
+            'UTF-8'))
+        sps = SpacePornSpider()
+        for response in sps.parse_main_page(response):
+            continue
+        self.assertEqual(1, len(mock_logging.method_calls), "One error should be logged")
+    
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_parse_main_page_xpath_found(self, mock_logging):
+        response = scrapy.http.HtmlResponse(url="dontcare", body=str.encode(self._main_page_data,
+            'UTF-8'))
+        sps = SpacePornSpider()
+        for response in sps.parse_main_page(response):
+            continue
+        self.assertEqual(0, len(mock_logging.method_calls), "No errors should be logged")
+
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_parse_image_page_xpath_not_found(self, mock_logging):
+        response = scrapy.http.HtmlResponse(url="dontcare", body=str.encode("<body></body>",
+            'UTF-8'))
+        sps = SpacePornSpider()
+        for response in sps.parse_image_page(response):
+            continue
+        self.assertEqual(1, len(mock_logging.method_calls), "One error should be logged")
+    
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_parse_image_page_xpath_found(self, mock_logging):
+        response = scrapy.http.HtmlResponse(url="dontcare", body=str.encode(self._image_page_data,
+            'UTF-8'))
+        sps = SpacePornSpider()
+        for response in sps.parse_image_page(response):
+            continue
+        self.assertEqual(0, len(mock_logging.method_calls), "No errors should be logged")
+
+if __name__ == '__main__':
+    unittest.main()
