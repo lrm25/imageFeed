@@ -41,14 +41,41 @@ class SpacePornSpider(scrapy.Spider):
             return
         yield scrapy.Request(image_marker, callback=self.save_and_set_image)
 
-    def save_and_set_image(self, response):
-        image_name = response.url.split('/')[-1]
-        if os.path.isfile(image_name):
-            print("File {} already downloaded".format(image_name))
-            return
+    # mockable function to check if file exists
+    def file_exists(self, image_name):    
+        return os.path.isfile(image_name)
+    
+    file_exists_func = file_exists
 
-        with open(image_name, 'wb') as f:
-            f.write(response.body)
+    # mockable function to write to file
+    def write_to_file(self, file_name, data_bytes):
+        with open(file_name, 'wb') as file:
+            file.write(data_bytes)
+
+    write_to_file_func = write_to_file
+
+    def save_image(self, response):
+        image_name = response.url.split('/')[-1]
+        if image_name == "":
+            logging.error("Unable to retrieve image name from url {}".format(response.url))
+            return None
+        if self.file_exists_func(image_name):
+            logging.info("File {} already downloaded".format(image_name))
+            return image_name
+        else:
+            try:
+                self.write_to_file_func(image_name, response.body)
+            except IOError as e:
+                logging.error("Unable to write to {}:  {}". format(image_name, str(e)))
+                return None
+        return image_name 
+
+    def save_and_set_image(self, response):
+
+        image_name = self.save_image(response)
+        if image_name == None:
+            logging.error("Error saving image, exiting ...")
+            return
 
         # make sure this is a ubuntu platform w/gsettings
         if (platform.system() != 'Linux') and ('Ubuntu' not in platform.version()):
@@ -66,10 +93,10 @@ class SpacePornSpider(scrapy.Spider):
         error = False
         if result.stdout != "":
             error = True
-            print("STDOUT:  {}".format(result.stdout))
+            logging.error("STDOUT:  {}".format(result.stdout))
         if result.stderr != "":
             error = True
-            print("STDERR:  {}".format(result.stderr))
+            logging.error("STDERR:  {}".format(result.stderr))
         if not error:
             print("Background set successful")
                 

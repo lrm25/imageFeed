@@ -23,6 +23,41 @@ class Failure:
         self.request = request
         self.value = value
 
+# TODO: may be able to combine these classes
+# TODO: more info on patching
+class SetupMockFileExists(object):
+    
+    def __init__(self, sps: SpacePornSpider, ret_val: bool):
+        self.sps = sps
+        self._orig_file_exists_func = sps.file_exists
+        self.ret_val = ret_val
+
+    def __enter__(self):
+        self.sps.file_exists_func = self._test_file_exists_func
+
+    def __exit__(self, type, value, traceback):
+        self.sps.file_exists_func = self._orig_file_exists_func
+    
+    def _test_file_exists_func(self, image_name):
+        return self.ret_val
+
+class SetupMockWriteToFile(object):
+
+    def __init__(self, sps: SpacePornSpider, dummy_error: str):
+        self.sps = sps
+        self._orig_func = sps.write_to_file
+        self._dummy_error = dummy_error
+
+    def __enter__(self):
+        self.sps.write_to_file_func = self._test_write_to_file_func
+
+    def __exit__(self, type, value, traceback):
+        self.sps.write_to_file_func = self._orig_func
+    
+    def _test_write_to_file_func(self, image_name, data):
+        if self._dummy_error:
+            raise IOError(self._dummy_error)
+
 class TestSpacePorn(unittest.TestCase):
 
     _main_page_data = '<div class="_3JgI-GOrkmyIeDeyzXdyUD _2CSlKHjH7lsjx0IpjORx14"><a href="/r/spaceporn/comments/iqrlsz/venusleft_titanmiddle_california_currentlyright/"><div class="_3Oa0THmZ3f5iZXAQ0hBJ0k " style="max-height:512px;margin:0 auto"><div><img alt="Post image" class="_2_tDEnGMLxpM6uOa2kaDB3 ImageBox-image media-element _1XWObl-3b9tPy64oaG6fax" src="https://preview.redd.it/i0t9cygn4jm51.jpg?width=640&amp;crop=smart&amp;auto=webp&amp;s=0517350ac5972b94d0e32ddf3b34a90093b7f523" style="max-height:512px"></div></div></a></div>'
@@ -79,6 +114,50 @@ class TestSpacePorn(unittest.TestCase):
         for response in sps.parse_image_page(response):
             continue
         self.assertEqual(0, len(mock_logging.method_calls), "No errors should be logged")
+
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_save_image_malformed_url(self, mock_logging):
+        response = scrapy.http.HtmlResponse(url="/", body=None)
+        sps = SpacePornSpider()
+        test = sps.save_image(response)
+        self.assertEqual(None, test, "save_image should return None")
+        self.assertEqual(1, len(mock_logging.method_calls), "Should be one error")
+        self.assertTrue("url" in str(mock_logging.method_calls[0]))
+
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_save_image_already_exists(self, mock_logging):
+        dummy_image_name = "a"
+        response = scrapy.http.HtmlResponse(url=dummy_image_name, body=None)
+        sps = SpacePornSpider()
+        with SetupMockFileExists(sps, True):
+            test = sps.save_image(response)
+            self.assertEqual(dummy_image_name, test, "save_image should return {}".format(dummy_image_name))
+            self.assertEqual(1, len(mock_logging.method_calls), "Should be one info statement")
+            self.assertTrue("info" in str(mock_logging.method_calls[0]))
+    
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_save_image_write_error(self, mock_logging):
+        dummy_image_name = "a"
+        response = scrapy.http.HtmlResponse(url=dummy_image_name, body=None)
+        sps = SpacePornSpider()
+        with SetupMockFileExists(sps, False):
+            dummy_error = "dummy error"
+            with SetupMockWriteToFile(sps, dummy_error): 
+                test = sps.save_image(response)
+                self.assertEqual(None, test, "save_image should return {}".format(dummy_image_name))
+                self.assertEqual(1, len(mock_logging.method_calls), "Should be one error statement")
+                self.assertTrue(dummy_error in str(mock_logging.method_calls[0]))
+    
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_save_image_ok(self, mock_logging):
+        dummy_image_name = "a"
+        response = scrapy.http.HtmlResponse(url=dummy_image_name, body=None)
+        sps = SpacePornSpider()
+        with SetupMockFileExists(sps, False):
+            with SetupMockWriteToFile(sps, None): 
+                test = sps.save_image(response)
+                self.assertEqual(dummy_image_name, test, "save_image should return {}".format(dummy_image_name))
+                self.assertEqual(0, len(mock_logging.method_calls), "Should be no logger statements")
 
 if __name__ == '__main__':
     unittest.main()
