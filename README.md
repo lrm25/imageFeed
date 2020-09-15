@@ -37,3 +37,7 @@ Enter the program subfolder and run:
 or
 
 `pipenv run scrapy crawl space-porn`
+
+For cleaner output:
+
+`scrapy crawl --nolog space-porn`

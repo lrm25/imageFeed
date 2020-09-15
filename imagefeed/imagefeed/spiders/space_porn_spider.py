@@ -54,6 +54,7 @@ class SpacePornSpider(scrapy.Spider):
 
     write_to_file_func = write_to_file
 
+    # save the image to disk, or skip if the newest image has already been downloaded
     def save_image(self, response):
         image_name = response.url.split('/')[-1]
         if image_name == "":
@@ -81,7 +82,7 @@ class SpacePornSpider(scrapy.Spider):
         if (platform.system() != 'Linux') and ('Ubuntu' not in platform.version()):
             return
         
-        result = subprocess.run(['gsettings'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = subprocess.run(['gsettings'], stderr=subprocess.PIPE)
         if 'Usage' not in str(result.stderr):
             return
 
