@@ -163,11 +163,15 @@ class TestSpacePorn(unittest.TestCase):
         return "dontcare"
 
     @patch('imagefeed.spiders.space_porn_spider.platform')
-    def test_check_platform_invalid_system(self, mock_platform):
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_check_platform_invalid_system(self, mock_logging, mock_platform):
         mock_platform.system = self.mock_platform_system
+        mock_platform.version = self.mock_platform_system
         sps = SpacePornSpider()
         test = sps.check_platform()
-        print(test)
+        self.assertFalse(test)
+        self.assertTrue(self.mock_platform_system() in str(mock_logging.method_calls[0]),
+            "{} should be in {}".format(self.mock_platform_system(), str(mock_logging.method_calls[0])))
 
 if __name__ == '__main__':
     unittest.main()

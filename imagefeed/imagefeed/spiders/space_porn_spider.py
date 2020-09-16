@@ -75,8 +75,8 @@ class SpacePornSpider(scrapy.Spider):
     def check_platform(self):
         system = platform.system()
         version = platform.version()
-        if (system != 'Linux') and ('Ubuntu' not in version):
-            logging.error("System is not Ubuntu linux (System: {}, version: {}".
+        if (system != 'Linux') or ('Ubuntu' not in version):
+            logging.error("System is not Ubuntu linux (System: {}, version: {})".
                           format(system, version))
             return False
         
