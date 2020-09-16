@@ -71,6 +71,22 @@ class SpacePornSpider(scrapy.Spider):
                 return None
         return image_name 
 
+    # make sure this is a ubuntu platform w/gsettings
+    def check_platform(self):
+        system = platform.system()
+        version = platform.version()
+        if (system != 'Linux') and ('Ubuntu' not in version):
+            logging.error("System is not Ubuntu linux (System: {}, version: {}".
+                          format(system, version))
+            return False
+        
+        result = subprocess.run(['gsettings'], stderr=subprocess.PIPE)
+        if 'Usage' not in str(result.stderr):
+            logging.error("System does not run gsettings")
+            return False
+        return True
+
+
     def save_and_set_image(self, response):
 
         image_name = self.save_image(response)
@@ -78,12 +94,7 @@ class SpacePornSpider(scrapy.Spider):
             logging.error("Error saving image, exiting ...")
             return
 
-        # make sure this is a ubuntu platform w/gsettings
-        if (platform.system() != 'Linux') and ('Ubuntu' not in platform.version()):
-            return
-        
-        result = subprocess.run(['gsettings'], stderr=subprocess.PIPE)
-        if 'Usage' not in str(result.stderr):
+        if not self.check_platform():
             return
 
         result = subprocess.run(['pwd'], stdout=subprocess.PIPE, text=True)

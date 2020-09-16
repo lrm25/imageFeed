@@ -159,5 +159,15 @@ class TestSpacePorn(unittest.TestCase):
                 self.assertEqual(dummy_image_name, test, "save_image should return {}".format(dummy_image_name))
                 self.assertEqual(0, len(mock_logging.method_calls), "Should be no logger statements")
 
+    def mock_platform_system(self):
+        return "dontcare"
+
+    @patch('imagefeed.spiders.space_porn_spider.platform')
+    def test_check_platform_invalid_system(self, mock_platform):
+        mock_platform.system = self.mock_platform_system
+        sps = SpacePornSpider()
+        test = sps.check_platform()
+        print(test)
+
 if __name__ == '__main__':
     unittest.main()
