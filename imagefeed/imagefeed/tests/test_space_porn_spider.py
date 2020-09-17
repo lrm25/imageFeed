@@ -3,7 +3,7 @@ import twisted
 import unittest
 import urllib
 
-from mock import patch
+from mock import Mock, patch
 from imagefeed.spiders.space_porn_spider import SpacePornSpider
     
 class Response:
@@ -159,8 +159,13 @@ class TestSpacePorn(unittest.TestCase):
                 self.assertEqual(dummy_image_name, test, "save_image should return {}".format(dummy_image_name))
                 self.assertEqual(0, len(mock_logging.method_calls), "Should be no logger statements")
 
+    _platform_system = "dontcare"
     def mock_platform_system(self):
-        return "dontcare"
+        return self._platform_system
+    
+    _platform_version = "dontcare"
+    def mock_platform_version(self):
+        return self._platform_version
 
     @patch('imagefeed.spiders.space_porn_spider.platform')
     @patch('imagefeed.spiders.space_porn_spider.logging')
@@ -170,8 +175,27 @@ class TestSpacePorn(unittest.TestCase):
         sps = SpacePornSpider()
         test = sps.check_platform()
         self.assertFalse(test)
-        self.assertTrue(self.mock_platform_system() in str(mock_logging.method_calls[0]),
-            "{} should be in {}".format(self.mock_platform_system(), str(mock_logging.method_calls[0])))
+        self.assertTrue("dontcare" in str(mock_logging.method_calls[0]),
+            "{} should be in {}".format("dontcare", str(mock_logging.method_calls[0])))
+
+    def mock_suprocess_call(self, command, stderr):
+        mock_result = Mock()
+        mock_result.stderr = "Usag"
+        return mock_result
+    
+    @patch('imagefeed.spiders.space_porn_spider.subprocess')
+    @patch('imagefeed.spiders.space_porn_spider.platform')
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_check_platform_no_gsettings(self, mock_logging, mock_platform, mock_subprocess):
+        self._platform_system = "Linux"
+        mock_platform.system = self.mock_platform_system
+        self._platform_version = "Ubuntu"
+        mock_platform.version = self.mock_platform_version
+        sps = SpacePornSpider()
+        test = sps.check_platform()
+        self.assertFalse(test)
+        self.assertTrue("gsettings" in str(mock_logging.method_calls[0]),
+                        "gsettings error should be returned")
 
 if __name__ == '__main__':
     unittest.main()
