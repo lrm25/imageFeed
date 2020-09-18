@@ -178,9 +178,10 @@ class TestSpacePorn(unittest.TestCase):
         self.assertTrue("dontcare" in str(mock_logging.method_calls[0]),
             "{} should be in {}".format("dontcare", str(mock_logging.method_calls[0])))
 
+    _gsettings_error = "Usag"
     def mock_suprocess_call(self, command, stderr):
         mock_result = Mock()
-        mock_result.stderr = "Usag"
+        mock_result.stderr = self._gsettings_error
         return mock_result
     
     @patch('imagefeed.spiders.space_porn_spider.subprocess')
@@ -191,11 +192,27 @@ class TestSpacePorn(unittest.TestCase):
         mock_platform.system = self.mock_platform_system
         self._platform_version = "Ubuntu"
         mock_platform.version = self.mock_platform_version
+        mock_subprocess.run = self.mock_suprocess_call
         sps = SpacePornSpider()
         test = sps.check_platform()
         self.assertFalse(test)
         self.assertTrue("gsettings" in str(mock_logging.method_calls[0]),
                         "gsettings error should be returned")
+    
+    @patch('imagefeed.spiders.space_porn_spider.subprocess')
+    @patch('imagefeed.spiders.space_porn_spider.platform')
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_check_platform_ok(self, mock_logging, mock_platform, mock_subprocess):
+        self._platform_system = "Linux"
+        mock_platform.system = self.mock_platform_system
+        self._platform_version = "Ubuntu"
+        mock_platform.version = self.mock_platform_version
+        self._gsettings_error = "Usage"
+        mock_subprocess.run = self.mock_suprocess_call
+        sps = SpacePornSpider()
+        test = sps.check_platform()
+        self.assertTrue(test)
+        self.assertEqual(0, len(mock_logging.method_calls))
 
 if __name__ == '__main__':
     unittest.main()
