@@ -214,5 +214,23 @@ class TestSpacePorn(unittest.TestCase):
         self.assertTrue(test)
         self.assertEqual(0, len(mock_logging.method_calls))
 
+    def _mock_subprocess_set_img_call(self, command, stdout="", stderr="", text=""):
+        mock = Mock()
+        mock.stdout = "/"
+        mock.stderr = ""
+        return mock
+
+    @patch('imagefeed.spiders.space_porn_spider.subprocess')
+    @patch('imagefeed.spiders.space_porn_spider.logging')
+    def test_set_image_stdout(self, mock_logging, mock_subprocess):
+        mock_subprocess.run = self._mock_subprocess_set_img_call
+        sps = SpacePornSpider()
+        test = sps.set_image("dontcare")
+        self.assertFalse(test)
+        self.assertEqual(1, len(mock_logging.method_calls))
+        self.assertTrue("STDOUT" in str(mock_logging.method_calls[0]), 
+                        "Error should contain 'STDOUT' string")
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -86,16 +86,7 @@ class SpacePornSpider(scrapy.Spider):
             return False
         return True
 
-
-    def save_and_set_image(self, response):
-
-        image_name = self.save_image(response)
-        if image_name == None:
-            logging.error("Error saving image, exiting ...")
-            return
-
-        if not self.check_platform():
-            return
+    def set_image(self, image_name):
 
         result = subprocess.run(['pwd'], stdout=subprocess.PIPE, text=True)
         pwd = str(result.stdout).strip()
@@ -109,8 +100,20 @@ class SpacePornSpider(scrapy.Spider):
         if result.stderr != "":
             error = True
             logging.error("STDERR:  {}".format(result.stderr))
-        if not error:
-            print("Background set successful")
-                
+        if error:
+            return False
+        return True
 
 
+    def save_and_set_image(self, response):
+
+        image_name = self.save_image(response)
+        if image_name == None:
+            logging.error("Error saving image, exiting ...")
+            return
+
+        if not self.check_platform():
+            return
+
+        if self.set_image(image_name):
+            logging.info("Background set successful")
