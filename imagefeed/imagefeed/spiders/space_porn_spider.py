@@ -86,22 +86,40 @@ class SpacePornSpider(scrapy.Spider):
             return False
         return True
 
-    def set_image(self, image_name):
+    def execute_gsettings_cmd(self, command):
 
-        result = subprocess.run(['pwd'], stdout=subprocess.PIPE, text=True)
-        pwd = str(result.stdout).strip()
-        file_url = "file:///{}/{}".format(pwd, image_name)
-        result = subprocess.run(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri', file_url], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(command, stdout=subprocess.PIPE, universal_newlines=True)
 
         error = False
-        if result.stdout != "":
+        if result.stdout != "" and result.stdout != None:
             error = True
             logging.error("STDOUT:  {}".format(result.stdout))
-        if result.stderr != "":
+        if result.stderr != "" and result.stderr != None:
             error = True
             logging.error("STDERR:  {}".format(result.stderr))
         if error:
             return False
+        return True
+
+    def set_image(self, image_name):
+
+        result = subprocess.run(['pwd'], stdout=subprocess.PIPE, universal_newlines=True)
+        pwd = str(result.stdout).strip()
+        file_url = "file:///{}/{}".format(pwd, image_name)
+        
+        # reset parameters to avoid any weird issues i've seen
+        if not self.execute_gsettings_cmd(['gsettings', 'reset', 'org.gnome.desktop.background', 'picture-uri']):
+            return False
+
+        if not self.execute_gsettings_cmd(['gsettings', 'reset', 'org.gnome.desktop.background', 'picture-options']):
+            return False
+
+        if not self.execute_gsettings_cmd(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri', file_url]):
+            return False
+
+        if not self.execute_gsettings_cmd(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-options', 'spanned']):
+            return False
+
         return True
 
 
