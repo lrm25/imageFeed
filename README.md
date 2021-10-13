@@ -2,13 +2,21 @@
 
 Pull images from reddit's spaceporn subreddit
 
+Tested on Ubuntu Linux w/Gnome (but should work on any Linux w/Gnome) and Windows 10
+
 ## To create and use virtual environment:
 
 ### Venv
-
 ```
 python3 -m venv env
+```
+#### Linux
+```
 source env/bin/activate
+```
+#### Windows
+```
+.\env\bin\activate
 ```
 
 ### pipenv (after installing it)

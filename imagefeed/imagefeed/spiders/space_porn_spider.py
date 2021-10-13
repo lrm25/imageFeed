@@ -1,5 +1,8 @@
+import ctypes
+import json
 import logging
 import os
+import pathlib
 import platform
 import scrapy
 import subprocess
@@ -10,6 +13,8 @@ class SpacePornSpider(scrapy.Spider):
 
     _reddit_main_page = "https://www.reddit.com"
     _space_porn_main_page = "https://www.reddit.com/r/spaceporn"
+    _image_title = None
+    _submitter = None
 
     # get r/spaceporn's main page
     def start_requests(self):
@@ -35,6 +40,11 @@ class SpacePornSpider(scrapy.Spider):
 
     # get URL for image itself
     def parse_image_page(self, response):
+        print(response.xpath('//*[a[img]]').get())
+        submitter_string = response.xpath('//*[a[contains(@href,"/user/")]]/a/@href').get()
+        self._submitter = submitter_string.split('/user/')[1][:-1]
+        print("Submitter: " + self._submitter)
+        self._image_title = response.xpath('//h1/text()').get()
         image_marker = response.xpath('//*[a[img[contains(@alt,"spaceporn")]]]/a/@href').get()
         if image_marker == None:
             logging.error("Link to image URL not found in HTML")
@@ -56,7 +66,37 @@ class SpacePornSpider(scrapy.Spider):
 
     # save the image to disk, or skip if the newest image has already been downloaded
     def save_image(self, response):
+
         image_name = response.url.split('/')[-1]
+
+        data = {
+            "title": self._image_title,
+            "file": image_name,
+            "submitter": self._submitter
+        }
+
+        image_list = []
+
+        duplicate = False
+        with open("images.json", "r+") as json_file:
+            if 0 < os.path.getsize("images.json"):
+                image_list = json.load(json_file)
+                print(image_list)
+
+            for element in image_list:
+                if "file" in element and element["file"] == image_name:
+                    duplicate = True
+                    break
+            if not duplicate:
+                image_list.append(data)
+            else:
+                print("duplicate found")
+
+        if not duplicate:
+            with open("images.json", "w") as json_file:
+                json_data = json.dumps(image_list)
+                json_file.write(json_data)
+
         if image_name == "":
             logging.error("Unable to retrieve image name from url {}".format(response.url))
             return None
@@ -73,18 +113,23 @@ class SpacePornSpider(scrapy.Spider):
 
     # make sure this is a ubuntu platform w/gsettings
     def check_platform(self):
+
         system = platform.system()
         version = platform.version()
-        if (system != 'Linux') or ('Ubuntu' not in version):
-            logging.error("System is not Ubuntu linux (System: {}, version: {})".
-                          format(system, version))
-            return False
+        if (system == 'Linux') and ('Ubuntu' in version):
+            result = subprocess.run(['gsettings'], stderr=subprocess.PIPE)
+            if 'Usage' not in str(result.stderr):
+                logging.error("Ubuntu Linux, but system does not run gsettings")
+                return False
+            return True, 'Linux'
+
+        # TODO specific versions
+        if system == 'Windows':
+            return True, 'Windows'
         
-        result = subprocess.run(['gsettings'], stderr=subprocess.PIPE)
-        if 'Usage' not in str(result.stderr):
-            logging.error("System does not run gsettings")
-            return False
-        return True
+        logging.error("System and version not supported(System: {}, version: {})".
+                      format(system, version))
+        return False, ''
 
     def execute_gsettings_cmd(self, command):
 
@@ -101,24 +146,39 @@ class SpacePornSpider(scrapy.Spider):
             return False
         return True
 
-    def set_image(self, image_name):
+    def set_image(self, platform, image_name):
 
-        result = subprocess.run(['pwd'], stdout=subprocess.PIPE, universal_newlines=True)
-        pwd = str(result.stdout).strip()
-        file_url = "file:///{}/{}".format(pwd, image_name)
+        cwd = os.getcwd()
+        print(os.listdir())
+        if platform == 'Windows':
+            SPI_SETBACKGROUND = 20
+            ctypes.windll.user32.SystemParametersInfoW(SPI_SETBACKGROUND, 0, os.path.join(cwd, image_name), 0)
+        elif platform == 'Linux':
+            file_url = "file:///{}/{}".format(cwd, image_name)
+
+        html_page_data = "<html>\n \
+            <head>Spaceporn</head>\n \
+            <style>body{\n \
+                background-image: url(\'" + pathlib.Path(os.path.join(cwd, image_name)).as_uri() + "\')\n \
+            }</style>\n \
+            </html>"
+        print(html_page_data)
+
+        self.write_to_file_func("test.html", bytes(html_page_data, 'utf-8'))
         
-        # reset parameters to avoid any weird issues i've seen
-        if not self.execute_gsettings_cmd(['gsettings', 'reset', 'org.gnome.desktop.background', 'picture-uri']):
-            return False
+        if platform == 'Linux':
+            # reset parameters to avoid any weird issues i've seen
+            if not self.execute_gsettings_cmd(['gsettings', 'reset', 'org.gnome.desktop.background', 'picture-uri']):
+                return False
 
-        if not self.execute_gsettings_cmd(['gsettings', 'reset', 'org.gnome.desktop.background', 'picture-options']):
-            return False
+            if not self.execute_gsettings_cmd(['gsettings', 'reset', 'org.gnome.desktop.background', 'picture-options']):
+                return False
 
-        if not self.execute_gsettings_cmd(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri', file_url]):
-            return False
+            if not self.execute_gsettings_cmd(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri', file_url]):
+                return False
 
-        if not self.execute_gsettings_cmd(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-options', 'spanned']):
-            return False
+            if not self.execute_gsettings_cmd(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-options', 'spanned']):
+                return False
 
         return True
 
@@ -130,8 +190,9 @@ class SpacePornSpider(scrapy.Spider):
             logging.error("Error saving image, exiting ...")
             return
 
-        if not self.check_platform():
+        supported, platform = self.check_platform()
+        if not supported:
             return
 
-        if self.set_image(image_name):
+        if self.set_image(platform, image_name):
             logging.info("Background set successful")
