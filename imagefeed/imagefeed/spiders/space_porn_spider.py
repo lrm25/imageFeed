@@ -16,6 +16,16 @@ class SpacePornSpider(scrapy.Spider):
     _image_title = None
     _submitter = None
 
+    def __init__(self, category='', **kwargs):
+        super().__init__(**kwargs)
+
+        self.relative_image_path = False
+        if hasattr(self, 'relativeimagepath'): 
+            if self.relativeimagepath == 'true':
+                self.relative_image_path = True
+            elif self.relativeimagepath != 'false':
+                raise Exception("Invalid relativeimagepath value: " + self.relativeimagepath)
+
     # get r/spaceporn's main page
     def start_requests(self):
         yield scrapy.Request(self._space_porn_main_page, callback=self.parse_main_page, 
@@ -148,23 +158,44 @@ class SpacePornSpider(scrapy.Spider):
 
     def set_image(self, platform, image_name):
 
-        cwd = os.getcwd()
-        print(os.listdir())
+        html_location = ''
+        if not hasattr(self, 'htmllocation'):
+            html_location = os.getcwd()
+        else:
+            html_location = self.htmllocation
+
+        image_location = os.getcwd()
+        full_image_path = os.path.join(image_location, image_name)
+        image_path = ''
+        if self.relative_image_path: 
+            print("Html location: " + html_location)
+            print("Full image path: " + full_image_path)
+            image_path = os.path.relpath(full_image_path, html_location)
+        else:
+            image_path = pathlib.Path(full_image_path).as_uri()
+        
+
         if platform == 'Windows':
             SPI_SETBACKGROUND = 20
-            ctypes.windll.user32.SystemParametersInfoW(SPI_SETBACKGROUND, 0, os.path.join(cwd, image_name), 0)
+            ctypes.windll.user32.SystemParametersInfoW(SPI_SETBACKGROUND, 0, os.path.join(image_path, image_name), 0)
+            # Edit for HTML file
+            image_path = image_path.replace('\\', '/')
         elif platform == 'Linux':
-            file_url = "file:///{}/{}".format(cwd, image_name)
+            file_url = "file:///{}/{}".format(image_path, image_name)
 
         html_page_data = "<html>\n \
             <head>Spaceporn</head>\n \
             <style>body{\n \
-                background-image: url(\'" + pathlib.Path(os.path.join(cwd, image_name)).as_uri() + "\')\n \
+                background-color: black;\n \
+                background-image: url(\'" + image_path + "\');\n \
+                background-position: center top;\n \
+                background-repeat: no-repeat;\n \
+                background-size: auto 100vh;\n \
             }</style>\n \
             </html>"
         print(html_page_data)
 
-        self.write_to_file_func("test.html", bytes(html_page_data, 'utf-8'))
+        self.write_to_file_func(os.path.join(html_location, "test.html"), bytes(html_page_data, 'utf-8'))
         
         if platform == 'Linux':
             # reset parameters to avoid any weird issues i've seen
