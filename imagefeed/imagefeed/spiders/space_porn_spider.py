@@ -6,6 +6,9 @@ import pathlib
 import platform
 import scrapy
 import subprocess
+import sys
+
+from scrapy.exceptions import CloseSpider
 
 class SpacePornSpider(scrapy.Spider):
 
@@ -15,9 +18,17 @@ class SpacePornSpider(scrapy.Spider):
     _space_porn_main_page = "https://www.reddit.com/r/spaceporn"
     _image_title = None
     _submitter = None
+    _full_image_path = None
 
     def __init__(self, category='', **kwargs):
         super().__init__(**kwargs)
+
+        if hasattr(self, 'help'):
+            if self.help == 'true':
+                self.usage()
+                raise CloseSpider('Help specified')
+            elif self.help != 'false':
+                raise Exception('Invalid help value: ' + self.help)
 
         self.relative_image_path = False
         if hasattr(self, 'relativeimagepath'): 
@@ -25,6 +36,12 @@ class SpacePornSpider(scrapy.Spider):
                 self.relative_image_path = True
             elif self.relativeimagepath != 'false':
                 raise Exception("Invalid relativeimagepath value: " + self.relativeimagepath)
+
+    def usage(self):
+        print("relativeimagepath: use relative image path in HTML file (\'true\' or \'false\', default \'false\)")
+        print('htmllocation: HTML file location (default:  image.html in working directory)')
+        print('imagepath: folder to place images in (default:  workinig directory)')
+        print("help: display this help (\'true\' or \'false\', default: '\'false\'")
 
     # get r/spaceporn's main page
     def start_requests(self):
@@ -68,14 +85,14 @@ class SpacePornSpider(scrapy.Spider):
     file_exists_func = file_exists
 
     # mockable function to write to file
-    def write_to_file(self, file_name, data_bytes):
-        with open(file_name, 'wb') as file:
+    def write_to_file(self, file_location, file_name, data_bytes):
+        with open(os.path.join(file_location, file_name), 'wb') as file:
             file.write(data_bytes)
 
     write_to_file_func = write_to_file
 
     # save the image to disk, or skip if the newest image has already been downloaded
-    def save_image(self, response):
+    def save_image(self, path, response):
 
         image_name = response.url.split('/')[-1]
 
@@ -110,12 +127,12 @@ class SpacePornSpider(scrapy.Spider):
         if image_name == "":
             logging.error("Unable to retrieve image name from url {}".format(response.url))
             return None
-        if self.file_exists_func(image_name):
+        if self.file_exists_func(os.path.join(path, image_name)):
             logging.info("File {} already downloaded".format(image_name))
             return image_name
         else:
             try:
-                self.write_to_file_func(image_name, response.body)
+                self.write_to_file_func(path, image_name, response.body)
             except IOError as e:
                 logging.error("Unable to write to {}:  {}". format(image_name, str(e)))
                 return None
@@ -160,19 +177,18 @@ class SpacePornSpider(scrapy.Spider):
 
         html_location = ''
         if not hasattr(self, 'htmllocation'):
-            html_location = os.getcwd()
+            html_location = os.path.join(os.getcwd(), 'image.html')
         else:
             html_location = self.htmllocation
 
-        image_location = os.getcwd()
-        full_image_path = os.path.join(image_location, image_name)
+
         image_path = ''
         if self.relative_image_path: 
             print("Html location: " + html_location)
-            print("Full image path: " + full_image_path)
-            image_path = os.path.relpath(full_image_path, html_location)
+            print("Full image path: " + self._full_image_path)
+            image_path = os.path.relpath(self._full_image_path, os.path.dirname(os.path.abspath(html_location)))
         else:
-            image_path = pathlib.Path(full_image_path).as_uri()
+            image_path = pathlib.Path(self._full_image_path).as_uri()
         
 
         if platform == 'Windows':
@@ -194,8 +210,9 @@ class SpacePornSpider(scrapy.Spider):
             }</style>\n \
             </html>"
         print(html_page_data)
+        print("HTML location: " + html_location)
 
-        self.write_to_file_func(os.path.join(html_location, "test.html"), bytes(html_page_data, 'utf-8'))
+        self.write_to_file_func(os.path.dirname(html_location), os.path.basename(html_location), bytes(html_page_data, 'utf-8'))
         
         if platform == 'Linux':
             # reset parameters to avoid any weird issues i've seen
@@ -215,15 +232,22 @@ class SpacePornSpider(scrapy.Spider):
 
 
     def save_and_set_image(self, response):
+        
+        image_location = os.getcwd()
+        if hasattr(self, 'imagepath'):
+            image_location = os.path.join(image_location, self.imagepath)
 
-        image_name = self.save_image(response)
+        image_name = self.save_image(image_location, response)
         if image_name == None:
             logging.error("Error saving image, exiting ...")
             return
+        
+        self._full_image_path = os.path.join(image_location, image_name)
+        print(self._full_image_path)
 
         supported, platform = self.check_platform()
         if not supported:
             return
 
-        if self.set_image(platform, image_name):
+        if self.set_image(platform, self._full_image_path):
             logging.info("Background set successful")
