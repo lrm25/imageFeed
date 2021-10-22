@@ -1,4 +1,5 @@
 import ctypes
+from datetime import datetime
 import json
 import logging
 import os
@@ -37,11 +38,19 @@ class SpacePornSpider(scrapy.Spider):
             elif self.relativeimagepath != 'false':
                 raise Exception("Invalid relativeimagepath value: " + self.relativeimagepath)
 
+        self.set_background = False
+        if hasattr(self, 'background'):
+            if self.background == 'true':
+                self.set_background = True
+            elif self.background != 'false':
+                raise Exception("Invalid background value: " + self.background)
+
     def usage(self):
         print("relativeimagepath: use relative image path in HTML file (\'true\' or \'false\', default \'false\)")
         print('htmllocation: HTML file location (default:  image.html in working directory)')
         print('imagepath: folder to place images in (default:  workinig directory)')
-        print("help: display this help (\'true\' or \'false\', default: '\'false\'")
+        print('background:  set computer background (\'true\' or \'false\', default: \'false\'')
+        print("help: display this help (\'true\' or \'false\', default: \'false\'")
 
     # get r/spaceporn's main page
     def start_requests(self):
@@ -138,15 +147,15 @@ class SpacePornSpider(scrapy.Spider):
                 return None
         return image_name 
 
-    # make sure this is a ubuntu platform w/gsettings
+    # make sure this is a ubuntu platform w/gsettings, or windows
     def check_platform(self):
 
         system = platform.system()
-        version = platform.version()
-        if (system == 'Linux') and ('Ubuntu' in version):
+        # version = platform.version()
+        if system == 'Linux':
             result = subprocess.run(['gsettings'], stderr=subprocess.PIPE)
             if 'Usage' not in str(result.stderr):
-                logging.error("Ubuntu Linux, but system does not run gsettings")
+                logging.error("Linux, but system does not run gsettings")
                 return False
             return True, 'Linux'
 
@@ -154,8 +163,7 @@ class SpacePornSpider(scrapy.Spider):
         if system == 'Windows':
             return True, 'Windows'
         
-        logging.error("System and version not supported(System: {}, version: {})".
-                      format(system, version))
+        logging.error("System not supported (System: {})".format(system))
         return False, ''
 
     def execute_gsettings_cmd(self, command):
@@ -173,7 +181,7 @@ class SpacePornSpider(scrapy.Spider):
             return False
         return True
 
-    def set_image(self, platform, image_name):
+    def set_image(self, background_supported, platform, image_name):
 
         html_location = ''
         if not hasattr(self, 'htmllocation'):
@@ -192,15 +200,16 @@ class SpacePornSpider(scrapy.Spider):
         
 
         if platform == 'Windows':
-            SPI_SETBACKGROUND = 20
-            ctypes.windll.user32.SystemParametersInfoW(SPI_SETBACKGROUND, 0, os.path.join(image_path, image_name), 0)
+            if self.set_background and background_supported:
+                SPI_SETBACKGROUND = 20
+                ctypes.windll.user32.SystemParametersInfoW(SPI_SETBACKGROUND, 0, os.path.join(image_path, image_name), 0)
             # Edit for HTML file
             image_path = image_path.replace('\\', '/')
         elif platform == 'Linux':
             file_url = "file:///{}/{}".format(image_path, image_name)
 
         html_page_data = "<html>\n \
-            <head>Spaceporn</head>\n \
+            <head><title>Spaceporn</title>\n \
             <style>body{\n \
                 background-color: black;\n \
                 background-image: url(\'" + image_path + "\');\n \
@@ -208,25 +217,30 @@ class SpacePornSpider(scrapy.Spider):
                 background-repeat: no-repeat;\n \
                 background-size: auto 100vh;\n \
             }</style>\n \
+            </head>\n \
+            <body>\n \
+            <p style=\"color:white\">Retrieved " + datetime.now().strftime("%B %m, %Y %I:%M:%S %p") + "</p>\n \
+            </body> \n \
             </html>"
         print(html_page_data)
         print("HTML location: " + html_location)
 
         self.write_to_file_func(os.path.dirname(html_location), os.path.basename(html_location), bytes(html_page_data, 'utf-8'))
         
-        if platform == 'Linux':
-            # reset parameters to avoid any weird issues i've seen
-            if not self.execute_gsettings_cmd(['gsettings', 'reset', 'org.gnome.desktop.background', 'picture-uri']):
-                return False
+        if self.set_background and background_supported:
+            if platform == 'Linux':
+                # reset parameters to avoid any weird issues i've seen
+                if not self.execute_gsettings_cmd(['gsettings', 'reset', 'org.gnome.desktop.background', 'picture-uri']):
+                    return False
 
-            if not self.execute_gsettings_cmd(['gsettings', 'reset', 'org.gnome.desktop.background', 'picture-options']):
-                return False
+                if not self.execute_gsettings_cmd(['gsettings', 'reset', 'org.gnome.desktop.background', 'picture-options']):
+                    return False
 
-            if not self.execute_gsettings_cmd(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri', file_url]):
-                return False
+                if not self.execute_gsettings_cmd(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-uri', file_url]):
+                    return False
 
-            if not self.execute_gsettings_cmd(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-options', 'spanned']):
-                return False
+                if not self.execute_gsettings_cmd(['gsettings', 'set', 'org.gnome.desktop.background', 'picture-options', 'spanned']):
+                    return False
 
         return True
 
@@ -243,11 +257,8 @@ class SpacePornSpider(scrapy.Spider):
             return
         
         self._full_image_path = os.path.join(image_location, image_name)
-        print(self._full_image_path)
 
         supported, platform = self.check_platform()
-        if not supported:
-            return
 
-        if self.set_image(platform, self._full_image_path):
+        if self.set_image(supported, platform, self._full_image_path):
             logging.info("Background set successful")
