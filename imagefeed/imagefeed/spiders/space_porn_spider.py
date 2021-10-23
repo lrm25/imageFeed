@@ -219,6 +219,8 @@ class SpacePornSpider(scrapy.Spider):
             }</style>\n \
             </head>\n \
             <body>\n \
+            <p style=\"color:white\">" + self._image_title + "</p>\n \
+            <p style=\"color:white\">Submitter: " + self._submitter + "</p>\n \
             <p style=\"color:white\">Retrieved " + datetime.now().strftime("%B %m, %Y %I:%M:%S %p") + "</p>\n \
             </body> \n \
             </html>"
