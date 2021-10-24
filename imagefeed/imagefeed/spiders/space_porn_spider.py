@@ -8,6 +8,7 @@ import platform
 import scrapy
 import subprocess
 import sys
+import time
 
 from scrapy.exceptions import CloseSpider
 
@@ -208,22 +209,26 @@ class SpacePornSpider(scrapy.Spider):
         elif platform == 'Linux':
             file_url = "file:///{}/{}".format(image_path, image_name)
 
-        html_page_data = "<html>\n \
-            <head><title>Spaceporn</title>\n \
-            <style>body{\n \
-                background-color: black;\n \
-                background-image: url(\'" + image_path + "\');\n \
-                background-position: center top;\n \
-                background-repeat: no-repeat;\n \
-                background-size: auto 100vh;\n \
-            }</style>\n \
-            </head>\n \
-            <body>\n \
-            <p style=\"color:white\">" + self._image_title + "</p>\n \
-            <p style=\"color:white\">Submitter: " + self._submitter + "</p>\n \
-            <p style=\"color:white\">Retrieved " + datetime.now().strftime("%B %m, %Y %I:%M:%S %p") + "</p>\n \
-            </body> \n \
-            </html>"
+        html_page_data = '''<html>
+            <head>
+                <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+                <meta http-equiv="Pragma" content="no-cache"/>
+                <meta http-equiv="Expires" content="0"/>
+            <title>Spaceporn</title>
+            <style>body{
+                background-color: black;
+                background-image: url(\'''' + image_path + '''\');
+                background-position: center top;
+                background-repeat: no-repeat;
+                background-size: auto 100vh;
+            }</style>
+            </head>
+            <body>
+            <p style=\"color:white\">''' + self._image_title + '''</p>
+            <p style=\"color:white\">Submitter: ''' + self._submitter + '''</p>
+            <p style=\"color:white\">Retrieved ''' + datetime.now().strftime("%B %m, %Y %I:%M:%S %p ") + time.tzname[time.localtime().tm_isdst] + '''</p>
+            </body>
+            </html>'''
         print(html_page_data)
         print("HTML location: " + html_location)
 
