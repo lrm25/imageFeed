@@ -209,7 +209,7 @@ class SpacePornSpider(scrapy.Spider):
         elif platform == 'Linux':
             file_url = "file:///{}/{}".format(image_path, image_name)
 
-        html_page_data = '''<html>
+        html_page_data = '''<!DOCTYPE html>
             <head>
                 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
                 <meta http-equiv="Pragma" content="no-cache"/>
@@ -226,7 +226,7 @@ class SpacePornSpider(scrapy.Spider):
             <body>
             <p style=\"color:white\">''' + self._image_title + '''</p>
             <p style=\"color:white\">Submitter: ''' + self._submitter + '''</p>
-            <p style=\"color:white\">Retrieved ''' + datetime.now().strftime("%B %m, %Y %I:%M:%S %p ") + time.tzname[time.localtime().tm_isdst] + '''</p>
+            <p style=\"color:white\">Retrieved ''' + datetime.now().strftime("%B %d, %Y %I:%M:%S %p ") + time.tzname[time.localtime().tm_isdst] + '''</p>
             </body>
             </html>'''
         print(html_page_data)
