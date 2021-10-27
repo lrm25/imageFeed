@@ -217,7 +217,6 @@ class SpacePornSpider(scrapy.Spider):
             <title>Spaceporn</title>
             <style>body{
                 background-color: black;
-                background-image: url(\'''' + image_path + '''\');
                 background-position: center top;
                 background-repeat: no-repeat;
                 background-size: auto 100vh;
@@ -227,6 +226,10 @@ class SpacePornSpider(scrapy.Spider):
             <p style=\"color:white\">''' + self._image_title + '''</p>
             <p style=\"color:white\">Submitter: ''' + self._submitter + '''</p>
             <p style=\"color:white\">Retrieved ''' + datetime.now().strftime("%B %d, %Y %I:%M:%S %p ") + time.tzname[time.localtime().tm_isdst] + '''</p>
+            <p id="test"></p>
+            <script>
+            document.body.style.backgroundImage = "url(\'''' + image_path + '''\')"
+            </script>
             </body>
             </html>'''
         print(html_page_data)
