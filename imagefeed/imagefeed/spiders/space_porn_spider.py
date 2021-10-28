@@ -105,6 +105,8 @@ class SpacePornSpider(scrapy.Spider):
     def save_image(self, path, response):
 
         image_name = response.url.split('/')[-1]
+        if '?' in image_name:
+            image_name = image_name.split('?')[0]
 
         data = {
             "title": self._image_title,
