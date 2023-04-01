@@ -32,11 +32,11 @@ env\Scripts\activate
 
 ## Usage
 
-## Jupyter notebook
+### Jupyter notebook
 
 `pipenv run jupyter notebook`
 
-## Scrapy
+### Scrapy
 
 Enter the `imagefeed` subfolder and run:
 
