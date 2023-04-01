@@ -5,7 +5,7 @@ import urllib
 
 from mock import Mock, patch
 from imagefeed.spiders.space_porn_spider import SpacePornSpider
-    
+
 class Response:
     def __init__(self, status):
         self.status = status
@@ -26,7 +26,7 @@ class Failure:
 # TODO: may be able to combine these classes
 # TODO: more info on patching
 class SetupMockFileExists(object):
-    
+
     def __init__(self, sps: SpacePornSpider, ret_val: bool):
         self.sps = sps
         self._orig_file_exists_func = sps.file_exists
@@ -37,7 +37,7 @@ class SetupMockFileExists(object):
 
     def __exit__(self, type, value, traceback):
         self.sps.file_exists_func = self._orig_file_exists_func
-    
+
     def _test_file_exists_func(self, image_name):
         return self.ret_val
 
@@ -53,7 +53,7 @@ class SetupMockWriteToFile(object):
 
     def __exit__(self, type, value, traceback):
         self.sps.write_to_file_func = self._orig_func
-    
+
     def _test_write_to_file_func(self, image_name, data):
         if self._dummy_error:
             raise IOError(self._dummy_error)
@@ -69,7 +69,7 @@ class TestSpacePorn(unittest.TestCase):
         sps = SpacePornSpider()
         sps.parse_error(failure)
         self.assertEqual(1, len(mock_logging.method_calls), "Only one error should be logged")
-    
+
     @patch('imagefeed.spiders.space_porn_spider.logging')
     def test_parse_error_code(self, mock_logging):
         error_code = 500
@@ -87,7 +87,7 @@ class TestSpacePorn(unittest.TestCase):
         for response in sps.parse_main_page(response):
             continue
         self.assertEqual(1, len(mock_logging.method_calls), "One error should be logged")
-    
+
     @patch('imagefeed.spiders.space_porn_spider.logging')
     def test_parse_main_page_xpath_found(self, mock_logging):
         response = scrapy.http.HtmlResponse(url="dontcare", body=str.encode(self._main_page_data,
@@ -105,7 +105,7 @@ class TestSpacePorn(unittest.TestCase):
         for response in sps.parse_image_page(response):
             continue
         self.assertEqual(1, len(mock_logging.method_calls), "One error should be logged")
-    
+
     @patch('imagefeed.spiders.space_porn_spider.logging')
     def test_parse_image_page_xpath_found(self, mock_logging):
         response = scrapy.http.HtmlResponse(url="dontcare", body=str.encode(self._image_page_data,
@@ -131,10 +131,11 @@ class TestSpacePorn(unittest.TestCase):
         sps = SpacePornSpider()
         with SetupMockFileExists(sps, True):
             test = sps.save_image(response)
-            self.assertEqual(dummy_image_name, test, "save_image should return {}".format(dummy_image_name))
+            self.assertEqual(dummy_image_name, test, "save_image should return {}".format(
+                dummy_image_name))
             self.assertEqual(1, len(mock_logging.method_calls), "Should be one info statement")
             self.assertTrue("info" in str(mock_logging.method_calls[0]))
-    
+
     @patch('imagefeed.spiders.space_porn_spider.logging')
     def test_save_image_write_error(self, mock_logging):
         dummy_image_name = "a"
@@ -142,22 +143,24 @@ class TestSpacePorn(unittest.TestCase):
         sps = SpacePornSpider()
         with SetupMockFileExists(sps, False):
             dummy_error = "dummy error"
-            with SetupMockWriteToFile(sps, dummy_error): 
+            with SetupMockWriteToFile(sps, dummy_error):
                 test = sps.save_image(response)
                 self.assertEqual(None, test, "save_image should return {}".format(dummy_image_name))
                 self.assertEqual(1, len(mock_logging.method_calls), "Should be one error statement")
                 self.assertTrue(dummy_error in str(mock_logging.method_calls[0]))
-    
+
     @patch('imagefeed.spiders.space_porn_spider.logging')
     def test_save_image_ok(self, mock_logging):
         dummy_image_name = "a"
         response = scrapy.http.HtmlResponse(url=dummy_image_name, body=None)
         sps = SpacePornSpider()
         with SetupMockFileExists(sps, False):
-            with SetupMockWriteToFile(sps, None): 
+            with SetupMockWriteToFile(sps, None):
                 test = sps.save_image(response)
-                self.assertEqual(dummy_image_name, test, "save_image should return {}".format(dummy_image_name))
-                self.assertEqual(0, len(mock_logging.method_calls), "Should be no logger statements")
+                self.assertEqual(dummy_image_name, test, "save_image should return {}".format(
+                    dummy_image_name))
+                self.assertEqual(0, len(mock_logging.method_calls),
+                    "Should be no logger statements")
 
     _platform_system = "dontcare"
     def mock_platform_system(self):

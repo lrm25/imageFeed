@@ -5,6 +5,7 @@ import scrapy
 import subprocess
 
 class SpacePornSpider(scrapy.Spider):
+    ''' Spider that pulls image from reddit's spaceporn website'''
 
     name = "space-porn"
 
@@ -13,7 +14,7 @@ class SpacePornSpider(scrapy.Spider):
 
     # get r/spaceporn's main page
     def start_requests(self):
-        yield scrapy.Request(self._space_porn_main_page, callback=self.parse_main_page, 
+        yield scrapy.Request(self._space_porn_main_page, callback=self.parse_main_page,
                              errback=self.parse_error, dont_filter=True)
 
     # deal with any URL request errors
@@ -42,9 +43,9 @@ class SpacePornSpider(scrapy.Spider):
         yield scrapy.Request(image_marker, callback=self.save_and_set_image)
 
     # mockable function to check if file exists
-    def file_exists(self, image_name):    
+    def file_exists(self, image_name):
         return os.path.isfile(image_name)
-    
+
     file_exists_func = file_exists
 
     # mockable function to write to file
@@ -57,6 +58,7 @@ class SpacePornSpider(scrapy.Spider):
     # save the image to disk, or skip if the newest image has already been downloaded
     def save_image(self, response):
         image_name = response.url.split('/')[-1]
+        image_name = image_name.split('?')[0]
         if image_name == "":
             logging.error("Unable to retrieve image name from url {}".format(response.url))
             return None
@@ -88,7 +90,7 @@ class SpacePornSpider(scrapy.Spider):
 
     def execute_gsettings_cmd(self, command):
 
-        result = subprocess.run(command, stdout=subprocess.PIPE, universal_newlines=True)
+        result = subprocess.run(command, stdout=subprocess.PIPE, text=True)
 
         error = False
         if result.stdout != "" and result.stdout != None:
@@ -103,7 +105,7 @@ class SpacePornSpider(scrapy.Spider):
 
     def set_image(self, image_name):
 
-        result = subprocess.run(['pwd'], stdout=subprocess.PIPE, universal_newlines=True)
+        result = subprocess.run(['pwd'], stdout=subprocess.PIPE, text=True)
         pwd = str(result.stdout).strip()
         file_url = "file:///{}/{}".format(pwd, image_name)
         
