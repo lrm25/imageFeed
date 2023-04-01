@@ -1,43 +1,63 @@
 # imageFeed
 
-Pull images from reddit's spaceporn subreddit
+Pull latest image from reddit's spaceporn subreddit
 
-## To create and use virtual environment:
+## Installation
 
-### Venv
+### Create and use virtual environment:
+
+#### Linux
 
 ```
 python3 -m venv env
 source env/bin/activate
 ```
 
-### pipenv (after installing it)
+#### Windows
 
-pipenv --python 3.7.4
+```
+python -m venv env
+env\Scripts\activate
+```
 
-## To run jupyter notebook file
+### Install dependencies
 
-pipenv install beautifulsoup4 jupyter
-pipenv run jupyter notebook
+#### Jupyter notebook
 
-## Install scrapy
+`pip install beautifulsoup4 jupyter`
+
+#### Scrapy
 
 `pip install scrapy`
 
-or
+## Usage
 
-`pipenv install scrapy`
+## Jupyter notebook
 
-## To run scrapy
+pipenv run jupyter notebook
 
-Enter the program subfolder and run:
+## Scrapy
+
+Enter the `imagefeed` subfolder and run:
 
 `scrapy crawl space-porn`
-
-or
-
-`pipenv run scrapy crawl space-porn`
 
 For cleaner output:
 
 `scrapy crawl --nolog space-porn`
+
+## Development
+
+### Linting
+
+Install linter with `pip install pylint`
+Go to `space_porn_spider.py` and run `pylint space_porn_spider.py`
+
+### Testing
+
+Run the following:
+
+```
+pip install pytest mock
+pytest
+```
