@@ -34,7 +34,7 @@ env\Scripts\activate
 
 ## Jupyter notebook
 
-pipenv run jupyter notebook
+`pipenv run jupyter notebook`
 
 ## Scrapy
 
