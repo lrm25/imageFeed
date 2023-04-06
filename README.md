@@ -8,9 +8,18 @@ Pull latest image from reddit's spaceporn subreddit
 
 #### Linux
 
+Tested on Ubuntu Linux w/Gnome (but should work on any Linux w/Gnome) and Windows 10
+
 ```
 python3 -m venv env
+```
+#### Linux
+```
 source env/bin/activate
+```
+#### Windows
+```
+.\env\bin\activate
 ```
 
 #### Windows
