@@ -165,7 +165,7 @@ class TestSpacePorn(unittest.TestCase):
     _platform_system = "dontcare"
     def mock_platform_system(self):
         return self._platform_system
-    
+
     _platform_version = "dontcare"
     def mock_platform_version(self):
         return self._platform_version
@@ -186,7 +186,7 @@ class TestSpacePorn(unittest.TestCase):
         mock_result = Mock()
         mock_result.stderr = self._gsettings_error
         return mock_result
-    
+
     @patch('imagefeed.spiders.space_porn_spider.subprocess')
     @patch('imagefeed.spiders.space_porn_spider.platform')
     @patch('imagefeed.spiders.space_porn_spider.logging')
@@ -201,7 +201,7 @@ class TestSpacePorn(unittest.TestCase):
         self.assertFalse(test)
         self.assertTrue("gsettings" in str(mock_logging.method_calls[0]),
                         "gsettings error should be returned")
-    
+
     @patch('imagefeed.spiders.space_porn_spider.subprocess')
     @patch('imagefeed.spiders.space_porn_spider.platform')
     @patch('imagefeed.spiders.space_porn_spider.logging')
@@ -231,7 +231,7 @@ class TestSpacePorn(unittest.TestCase):
         test = sps.set_image("dontcare")
         self.assertFalse(test)
         self.assertEqual(1, len(mock_logging.method_calls))
-        self.assertTrue("STDOUT" in str(mock_logging.method_calls[0]), 
+        self.assertTrue("STDOUT" in str(mock_logging.method_calls[0]),
                         "Error should contain 'STDOUT' string")
 
 

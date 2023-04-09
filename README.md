@@ -8,9 +8,18 @@ Pull latest image from reddit's spaceporn subreddit
 
 #### Linux
 
+Tested on Ubuntu Linux w/Gnome (but should work on any Linux w/Gnome) and Windows 10
+
 ```
 python3 -m venv env
+```
+#### Linux
+```
 source env/bin/activate
+```
+#### Windows
+```
+.\env\bin\activate
 ```
 
 #### Windows
@@ -22,11 +31,15 @@ env\Scripts\activate
 
 ### Install dependencies
 
-#### Jupyter notebook
+#### All with requirements.txt
+
+`pip install -r requirements.txt`
+
+#### Specific for Jupyter notebook
 
 `pip install beautifulsoup4 jupyter`
 
-#### Scrapy
+#### Specific for crapy
 
 `pip install scrapy`
 
@@ -45,6 +58,20 @@ Enter the `imagefeed` subfolder and run:
 For cleaner output:
 
 `scrapy crawl --nolog space-porn`
+
+Print usage:
+
+`scrapy crawl --nolog space-porn -a help=true`
+
+### Dockerfile
+
+Build with:
+
+`docker build -t <desired name> .`
+
+Run with:
+
+`docker run -t <desired image folder>:/image <image name>`
 
 ## Development
 
