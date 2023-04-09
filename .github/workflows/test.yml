@@ -1,0 +1,24 @@
+name: system-test
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.7
+
+      - name: Install dependencies
+        run: pip install scrapy
+
+      - name: Run docker container, check for file
+        run: |
+          mkdir image
+          docker build -t imagefeed .
+          docker run -v ${PWD}/image:/image imagefeed
+          if [[ "x" == "x$(ls -a image/*)" ]]; then
+            exit 1
+          fi
