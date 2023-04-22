@@ -71,7 +71,7 @@ Build with:
 
 Run with:
 
-`docker run -t <desired image folder>:/image <image name>`
+`docker run -v <desired image folder>:/image <image name>`
 
 ## Development
 

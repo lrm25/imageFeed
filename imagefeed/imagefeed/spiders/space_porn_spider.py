@@ -8,6 +8,7 @@ from pathlib import Path
 import platform
 import subprocess
 import time
+import urllib
 
 import scrapy
 
@@ -56,8 +57,8 @@ class SpacePornSpider(scrapy.Spider):
             "(\'true\' or \'false\', default \'false\')")
         print('htmllocation: HTML file location (default:  image.html in working directory)')
         print('imagepath: folder to place images in (default:  working directory)')
-        print('background:  set computer background (\'true\' or \'false\', default: \'false\'')
-        print("help: display this help (\'true\' or \'false\', default: \'false\'")
+        print('background:  set computer background (\'true\' or \'false\', default: \'false\')')
+        print('help: display this help (\'true\' or \'false\', default: \'false\')')
 
     def start_requests(self):
         ''' Scrapy calls this to begin pulling image '''
@@ -118,6 +119,8 @@ class SpacePornSpider(scrapy.Spider):
         image_name = response.url.split('/')[-1]
         if '?' in image_name:
             image_name = image_name.split('?')[0]
+        if '%' in image_name:
+            image_name = urllib.parse.unquote(image_name)
 
         data = {
             "title": self._image_title,
@@ -154,10 +157,11 @@ class SpacePornSpider(scrapy.Spider):
             logging.error(f"Unable to retrieve image name from url {response.url}")
             return None
         if self.file_exists_func(os.path.join(path, image_name)):
-            logging.info("File {image_name} already downloaded")
+            logging.info(f"File {image_name} already downloaded")
             return image_name
         else:
             try:
+                print(image_name)
                 self.write_to_file_func(path, image_name, response.body)
             except IOError as e:
                 logging.error(f"Unable to write to {image_name}:  {str(e)}")
